@@ -1,7 +1,7 @@
 var log =
 	function ( o )
 	{
-		console.log( JSON.stringify( o, null, "\t" ) );
+		console.log( typeof o === "undefined" ? "" : ( typeof o === "string" ? o : JSON.stringify( o, null, "\t" ) ) );
 	};
 
 var getFirstKey =
@@ -29,7 +29,7 @@ var replicate =
 					{
 						"method": "GET",
 						"url": url,
-						"params": {
+						"qs": {
 							"feed": "normal",
 							"style": "all_docs",
 							"heartbeat": 10000
@@ -39,6 +39,7 @@ var replicate =
 					{
 						var docrevs = {};
 						var data = JSON.parse( body );
+
 						if ( data.results )
 						{
 							data.results.forEach(
@@ -87,16 +88,41 @@ var replicate =
 											{
 												"method": "GET",
 												"url": url,
-												"params": {
-													"revs": true,
+												"qs": {
+													"revs": "true",
 													"open_revs": JSON.stringify( revs ),
-													"latest": true
+													"latest": "true"
 												}
 											},
 											function ( error, response, body )
 											{
-												// TODO: Handle multipart!!!!
-												newDocs.push( JSON.parse( body ) );
+												if ( response.headers[ "content-type" ].indexOf( "multipart/mixed" ) >= 0 )
+												{
+													log( "==================================================" );
+													log( "=== RECEIVED MULTIPART ... NOT YET IMPLEMENTED ===" );
+													log( "==================================================" );
+													log();
+													log();
+													log( body );
+													log();
+													log();
+													throw {};
+												}
+
+												var doc = JSON.parse( body );
+
+												if ( response.statusCode === 200 )
+												{
+													delete doc._revisions;
+													// TODO: Handle multipart!!!!
+													newDocs.push( doc );
+												}
+												else
+												{
+													log( response );
+													throw {};
+												}
+
 												getNextDoc( missingDocRevs, newDocs );
 											}
 										);
@@ -158,7 +184,7 @@ var replicate =
 						},
 						function ( error, response, body )
 						{
-							console.log( response );
+							log( response );
 						}
 					);
 				}

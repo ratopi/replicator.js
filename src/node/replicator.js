@@ -20,6 +20,7 @@ var replicate =
 	function ( config )
 	{
 		var request = require( "request" );
+		var multipartParser = require( "./multipart" ).parse;
 
 		var readChanges =
 			function ( source )
@@ -96,34 +97,43 @@ var replicate =
 											},
 											function ( error, response, body )
 											{
-												if ( response.headers[ "content-type" ].indexOf( "multipart/mixed" ) >= 0 )
-												{
-													log( "==================================================" );
-													log( "=== RECEIVED MULTIPART ... NOT YET IMPLEMENTED ===" );
-													log( "==================================================" );
-													log();
-													log();
-													log( body );
-													log();
-													log();
-													throw {};
-												}
-
-												var doc = JSON.parse( body );
+												var doc;
 
 												if ( response.statusCode === 200 )
 												{
-													delete doc._revisions;
-													// TODO: Handle multipart!!!!
-													newDocs.push( doc );
+													if ( response.headers[ "content-type" ].indexOf( "multipart/mixed" ) >= 0 )
+													{
+														var parts = multipartParser( response.headers, body );
+
+														if ( parts.length !== 1 )
+														{
+															throw {
+																"error": "can handle only one document"
+															};
+														}
+
+														doc = JSON.parse( parts[ 0 ] );
+														delete doc._revisions;
+
+														newDocs.push( doc );
+
+														getNextDoc( missingDocRevs, newDocs );
+													}
+													else
+													{
+														doc = JSON.parse( body );
+														delete doc._revisions;
+
+														newDocs.push( doc );
+
+														getNextDoc( missingDocRevs, newDocs );
+													}
 												}
 												else
 												{
 													log( response );
 													throw {};
 												}
-
-												getNextDoc( missingDocRevs, newDocs );
 											}
 										);
 									};

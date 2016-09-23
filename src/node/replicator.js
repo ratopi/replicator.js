@@ -4,6 +4,18 @@ var log =
 		console.log( JSON.stringify( o, null, "\t" ) );
 	};
 
+var getFirstKey =
+	function ( object )
+	{
+		var key;
+		for ( key in object )
+		{
+			break;
+		}
+
+		return key;
+	};
+
 var replicate =
 	function ( config )
 	{
@@ -77,7 +89,8 @@ var replicate =
 												"url": url,
 												"params": {
 													"revs": true,
-													"open_revs": JSON.stringify( revs )
+													"open_revs": JSON.stringify( revs ),
+													"latest": true
 												}
 											},
 											function ( error, response, body )
@@ -89,10 +102,9 @@ var replicate =
 										);
 									};
 
-								var key;
 								var entry;
 
-								for ( key in missingDocRevs ) break;
+								var key = getFirstKey( missingDocRevs );
 
 								if ( key === undefined )
 								{
@@ -127,12 +139,13 @@ var replicate =
 			{
 				var url = target + "/_bulk_docs";
 				var data = {
+					"new_edits": false,
 					"docs": docs
 				};
 
 				if ( docs.length === 0 )
 				{
-					console.log("nothing to do");
+					console.log( "nothing to do" );
 				}
 				else
 				{
@@ -158,8 +171,8 @@ var replicate =
 replicate(
 	{
 //		"source": "http://localhost:55984/aze_prod",
-		"source": "http://localhost:55984/test",
-		"target": "http://localhost:55984/test2",
+		"source": "http://localhost:5984/test",
+		"target": "http://localhost:5984/test2",
 		"continuous": true
 	}
 );
